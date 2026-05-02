@@ -1,4 +1,5 @@
 import { bodyPositions } from '../sim/world.js';
+import { solveKepler } from '../sim/kepler.js';
 import { compressAU, bodyRadiusPx } from './scale.js';
 import { worldToScreen } from './camera.js';
 
@@ -44,36 +45,40 @@ export function drawWorld(renderer, world, camera) {
     let s;
     let displayR;
     if (b.kind === 'moon' && screenById.has(b.parent)) {
-      // Bodies are rendered massively exaggerated (a gas giant is ~400×
-      // its real radius on screen). Rendering moons at true scale puts
-      // them inside the parent's disc; rendering them at full
-      // display-frame scale flings them off the screen. Compromise:
-      // place the moon at f(r_real / r_planet) × parent_display_radius,
-      // with a cube-root compression so moons cluster visibly just
-      // outside the parent regardless of their real distance. The
-      // moon's display *size* is also scaled relative to its parent —
-      // sqrt of the real size ratio — so a moon doesn't appear as 30%
-      // of its parent's diameter when its real size is 3%.
+      // The moon is rendered in a compressed display frame around its
+      // parent: position lifted out of true scale (would render inside
+      // the parent's exaggerated disc) and into a frame where moons sit
+      // visibly outside the planet. The compression breaks the natural
+      // distance/period relationship — two moons at very different real
+      // distances end up at nearly identical visual distances, but
+      // their real Kepler periods differ by orders of magnitude. To
+      // preserve the eye's expectation that visual distance maps to
+      // orbital speed, we run Kepler's equation in the *display* frame:
+      // each moon's mean motion is rescaled so its visual period
+      // follows T ∝ visual_a^1.5 instead of T ∝ real_a^1.5. Inner and
+      // outer moons of the same planet end up orbiting at speeds
+      // proportional to where they appear, not where they really are.
+      // The simulation itself is untouched — bodyPositions() still
+      // returns the real positions; this fake-Kepler is render-only.
       const parent = bodyById.get(b.parent);
       const parentScreen = screenById.get(b.parent);
-      const parentPos = positions.get(b.parent);
-      const moonPos = positions.get(b.id);
-      const localX = moonPos.x - parentPos.x;
-      const localY = moonPos.y - parentPos.y;
-      const r_real_au = Math.hypot(localX, localY);
+      const planetR_au = parent.r_km / AU_KM;
       const dispParentR_px = bodyRadiusPx(parent.r_km, camera.zoom);
-      if (r_real_au === 0) {
-        s = parentScreen;
-      } else {
-        const realParentR_au = parent.r_km / AU_KM;
-        const ratio = r_real_au / realParentR_au;
-        const compressed = 1.5 + 0.5 * Math.cbrt(ratio);
-        const offset = compressed * dispParentR_px;
-        s = {
-          sx: parentScreen.sx + (localX / r_real_au) * offset,
-          sy: parentScreen.sy + (localY / r_real_au) * offset,
-        };
-      }
+      const realRatio = b.a / planetR_au;
+      const visualRatio = 1.5 + 0.5 * Math.cbrt(realRatio);
+      const visualN = b.n * Math.pow(realRatio / visualRatio, 1.5);
+      const M = b.L0 + visualN * world.t - b.omega;
+      const E = solveKepler(M, b.e);
+      const sqrt1pe = Math.sqrt(1 + b.e);
+      const sqrt1me = Math.sqrt(1 - b.e);
+      const nu = 2 * Math.atan2(sqrt1pe * Math.sin(E / 2), sqrt1me * Math.cos(E / 2));
+      const visualA_px = visualRatio * dispParentR_px;
+      const r_px = visualA_px * (1 - b.e * Math.cos(E));
+      const dirAngle = nu + b.omega;
+      s = {
+        sx: parentScreen.sx + r_px * Math.cos(dirAngle),
+        sy: parentScreen.sy + r_px * Math.sin(dirAngle),
+      };
       displayR = Math.max(2, dispParentR_px * Math.sqrt(b.r_km / parent.r_km));
     } else {
       const compressed = compressOrbital(positions.get(b.id));

@@ -127,8 +127,8 @@ Each phase is a runnable, enjoyable thing on its own. **Do not skip ahead.** Eac
 ### Phase 1 — The Orrery (✓ complete, tagged v0.1-orrery)
 Just the star system. One star, procedurally rolled planets and moons, optional asteroid belt. Keplerian orbits, time controls (pause / 1x / 10x / 100x / 1000x / 10000x), click-to-inspect any body, seed input so the same seed always yields the same system. No colonies. Goal: something beautiful enough that you want to keep going. Lock in camera, time scrubbing, generator, and the visual feel here.
 
-### Phase 2 — Static Colonies
-Place colonies on bodies. Population, resources, infrastructure exist and evolve over time, but colonies do not yet act — no ships, no expansion. Click a colony to see its state. Tune the economic core here.
+### Phase 2 — Static Colonies (✓ complete, tagged v0.2-static-colonies)
+Place colonies on bodies. Population, resources, infrastructure exist and evolve over time, but colonies do not yet act — no ships, no expansion. Click a colony to see its state. Tune the economic core here. Generator places 2 starter colonies on rocky planets per seed (deterministic). Each tick runs an extract → produce food/goods → consume → morale → population loop with hab/industry/spaceport tier auto-upgrades. Body composition matters: extraction is per-capita × industryTier² × richness, demand-bounded; bodies have finite reserves that visibly deplete and halt extraction at zero (the Phase 3 trade-routes setup). Colonized planets render with day/night shading, lit-nightside city lights and building clusters, smokestacks scaled by industry tier, and a satellite swarm at spaceport tier 1+. Inspector exposes every resource's stockpile and per-day flow live, plus body reserve %. A `showcase` seed seeds 6 colonies at predefined stages for visual verification. Determinism is asserted by `tests/determinism.test.js`.
 
 ### Phase 3 — Ships and Transfers
 Hohmann transfers between bodies. Initially freight only: surplus colony sends to deficit colony. Watching ships trace transfer ellipses across the system is the moment the project starts to feel alive.

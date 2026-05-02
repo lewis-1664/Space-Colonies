@@ -34,7 +34,7 @@ These are decided. Don't relitigate them mid-build.
 - **One star for now, designed for two later.** The generator emits a single star at the barycentre. The body model and renderer treat "the central thing" as generic so a binary system can be slotted in without restructuring.
 - **Determinism with seeds.** Every simulation has a seed. Same seed = same generated system + same outcome. Critical for debugging, sharing scenarios, and player retries.
 - **Fixed-timestep simulation, decoupled from rendering.** All randomness draws from the seeded RNG.
-- **Time scale:** Base rate 1x = 1 in-game day per real second. Multipliers up to ~10000x (about 30 in-game years per real second).
+- **Time scale:** Base rate 1x = 0.1 in-game days per real second (one in-game day per ten real seconds). Multipliers up to 10000x (about 2.7 in-game years per real second). The base rate is calibrated so moons at 1x are watchable rather than blurred — visual moon periods around 0.5 days resolve to ~5 real seconds per orbit at 1x.
 - **Population is abstract.** Tracked as a number plus derived stats (growth rate, education, morale). Named figures are narrative overlays, not simulated agents.
 - **Colony cap:** Design for up to ~50 simultaneous colonies. Beyond that, the timeline becomes unreadable and AI bookkeeping bogs down.
 - **Resource list:** Eight types — water/ice, metals, rare earths, fissile material, hydrocarbons, silicates, food (derived), manufactured goods (derived).

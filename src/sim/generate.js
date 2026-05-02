@@ -182,22 +182,37 @@ export function generateSystem(seed) {
     prevE = e;
   }
 
-  // Asteroid belts. Walk consecutive planet pairs; when the gap between
-  // them is wide enough, roll for a belt. Belts get a few hundred
-  // tracked bodies with low eccentricity and random orbital phase.
+  // Asteroid belts. The belt must occupy a band that no planet's orbit
+  // reaches — past the inner planet's aphelion, before the outer
+  // planet's perihelion. Asteroid eccentricity is also bounded so each
+  // asteroid's own orbit stays inside the band; otherwise visually you
+  // see planet orbit rings cutting through the belt.
+  const ASTEROID_E_MAX = 0.05;
   const planets = bodies.filter(b => b.kind === 'planet');
   let beltCount = 0;
   for (let i = 1; i < planets.length; i++) {
     const inner = planets[i - 1];
     const outer = planets[i];
-    const ratio = outer.a / inner.a;
-    if (ratio < 2.0) continue;
+    // Require a genuinely wide gap; most spacing-rule-satisfying gaps
+    // qualify under just the orbit-clearance check, which would let
+    // every system host belts in every gap. Real systems are sparser.
+    if (outer.a / inner.a < 1.7) continue;
+    const innerAphelion = inner.a * (1 + inner.e);
+    const outerPerihelion = outer.a * (1 - outer.e);
+    // Allowed range of asteroid semi-major axes such that asteroid
+    // perihelion > innerAphelion and asteroid aphelion < outerPerihelion
+    // for any e ≤ ASTEROID_E_MAX.
+    const aRangeMin = innerAphelion / (1 - ASTEROID_E_MAX);
+    const aRangeMax = outerPerihelion / (1 + ASTEROID_E_MAX);
+    if (aRangeMax / aRangeMin < 1.15) continue; // not enough clearance
     if (rng() > 0.5) continue;
     beltCount++;
-    const beltCenter = Math.sqrt(inner.a * outer.a); // geometric mean
-    const beltHalfWidth = (outer.a - inner.a) * 0.18;
-    const aMin = beltCenter - beltHalfWidth;
-    const aMax = beltCenter + beltHalfWidth;
+    // Use the central 80% of the allowed range so the belt sits cleanly
+    // away from both bounding planet orbits.
+    const center = Math.sqrt(aRangeMin * aRangeMax);
+    const halfWidth = (aRangeMax - aRangeMin) * 0.4;
+    const aMin = center - halfWidth;
+    const aMax = center + halfWidth;
     const count = 120 + Math.floor(rng() * 180);
     for (let j = 0; j < count; j++) {
       const aAst = rangeUniform(rng, aMin, aMax);
@@ -207,7 +222,7 @@ export function generateSystem(seed) {
         kind: 'asteroid',
         parent: star.id,
         a: aAst,
-        e: rng() * 0.18,
+        e: rng() * ASTEROID_E_MAX,
         omega: rng() * TWO_PI,
         L0: rng() * TWO_PI,
         n: meanMotion(aAst, starMass),

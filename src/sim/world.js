@@ -15,6 +15,7 @@ export function createWorld({ seed = 'space-colonies' } = {}) {
     bodies: system.bodies,
     starName: system.starName,
     planetCount: system.planetCount,
+    beltCount: system.beltCount,
   };
 }
 

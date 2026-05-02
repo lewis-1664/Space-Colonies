@@ -182,5 +182,41 @@ export function generateSystem(seed) {
     prevE = e;
   }
 
-  return { bodies, seed: seedInt, starName, planetCount };
+  // Asteroid belts. Walk consecutive planet pairs; when the gap between
+  // them is wide enough, roll for a belt. Belts get a few hundred
+  // tracked bodies with low eccentricity and random orbital phase.
+  const planets = bodies.filter(b => b.kind === 'planet');
+  let beltCount = 0;
+  for (let i = 1; i < planets.length; i++) {
+    const inner = planets[i - 1];
+    const outer = planets[i];
+    const ratio = outer.a / inner.a;
+    if (ratio < 2.0) continue;
+    if (rng() > 0.5) continue;
+    beltCount++;
+    const beltCenter = Math.sqrt(inner.a * outer.a); // geometric mean
+    const beltHalfWidth = (outer.a - inner.a) * 0.18;
+    const aMin = beltCenter - beltHalfWidth;
+    const aMax = beltCenter + beltHalfWidth;
+    const count = 120 + Math.floor(rng() * 180);
+    for (let j = 0; j < count; j++) {
+      const aAst = rangeUniform(rng, aMin, aMax);
+      bodies.push({
+        id: `${star.id}_b${beltCount}_${j}`,
+        name: null,
+        kind: 'asteroid',
+        parent: star.id,
+        a: aAst,
+        e: rng() * 0.18,
+        omega: rng() * TWO_PI,
+        L0: rng() * TWO_PI,
+        n: meanMotion(aAst, starMass),
+        r_km: 5 + rng() * 80,
+        mass_sol: 0,
+        color: pickFrom(rng, ['#7a6f60', '#8b7d6b', '#69584a', '#7a6451', '#6d5a4d']),
+      });
+    }
+  }
+
+  return { bodies, seed: seedInt, starName, planetCount, beltCount };
 }

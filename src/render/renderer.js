@@ -43,25 +43,33 @@ export function drawWorld(renderer, world, camera) {
   for (const b of world.bodies) {
     let s;
     if (b.kind === 'moon' && screenById.has(b.parent)) {
-      // Bodies are rendered massively exaggerated relative to true scale
-      // (a gas giant is ~400× its real radius on screen). True-scale moon
-      // offsets would always render inside their parent's disc. Lift the
-      // moon's local offset into the parent's display frame: at scale K =
-      // parent_display_radius / parent_real_radius, a moon at 6 R_parent
-      // in real space appears at 6 R_disp on screen at every zoom.
+      // Bodies are rendered massively exaggerated (a gas giant is ~400×
+      // its real radius on screen). Rendering moons at true scale puts
+      // them inside the parent's disc; rendering them at full
+      // display-frame scale flings them off the screen. Compromise:
+      // place the moon at f(r_real / r_planet) × parent_display_radius,
+      // with a cube-root compression so moons cluster visibly just
+      // outside the parent regardless of their real distance.
       const parent = bodyById.get(b.parent);
       const parentScreen = screenById.get(b.parent);
       const parentPos = positions.get(b.parent);
       const moonPos = positions.get(b.id);
       const localX = moonPos.x - parentPos.x;
       const localY = moonPos.y - parentPos.y;
-      const realParentR_au = parent.r_km / AU_KM;
-      const dispParentR_px = bodyRadiusPx(parent.r_km, camera.zoom);
-      const k = dispParentR_px / (realParentR_au * camera.zoom);
-      s = {
-        sx: parentScreen.sx + localX * camera.zoom * k,
-        sy: parentScreen.sy + localY * camera.zoom * k,
-      };
+      const r_real_au = Math.hypot(localX, localY);
+      if (r_real_au === 0) {
+        s = parentScreen;
+      } else {
+        const realParentR_au = parent.r_km / AU_KM;
+        const dispParentR_px = bodyRadiusPx(parent.r_km, camera.zoom);
+        const ratio = r_real_au / realParentR_au;
+        const compressed = 1.5 + 0.5 * Math.cbrt(ratio);
+        const offset = compressed * dispParentR_px;
+        s = {
+          sx: parentScreen.sx + (localX / r_real_au) * offset,
+          sy: parentScreen.sy + (localY / r_real_au) * offset,
+        };
+      }
     } else {
       const compressed = compressOrbital(positions.get(b.id));
       s = worldToScreen(camera, canvas, compressed.x, compressed.y);

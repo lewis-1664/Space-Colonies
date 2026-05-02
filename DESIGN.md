@@ -50,6 +50,23 @@ These are decided. Don't relitigate them mid-build.
 - Architecture supports a second star (binary system) — the generator simply does not produce one yet.
 - Time controls: pause, 1x, 10x, 100x, 1000x, 10000x. Smooth transitions between rates.
 
+#### 4.1.1 Coordinate frames (and SOI transitions)
+
+The simulation uses **two coordinate frames**, switched at parent boundaries. This is the standard real-orbital-mechanics pattern: a spacecraft far from a planet lives in heliocentric coords, and inside the planet's sphere of influence (SOI) it lives in planet-relative coords.
+
+- **Heliocentric frame.** Bodies whose `parent` is the star (planets, asteroid belt members) and ships in long-distance transit. Positions are real AU. For display, `compressAU` (asinh) is applied so inner and outer planets fit on one screen, but the simulation itself uses uncompressed real values.
+- **Parent-relative frame.** Bodies whose `parent` is a planet (moons, and in Phase 3, ships in approach or low orbit). Positions are stored relative to the parent. Real moon distances are roughly 10⁻³ to 10⁻² AU — invisibly small at heliocentric scale — so the renderer projects parent-relative positions through a *parent-frame transform* tied to the parent's exaggerated display radius. Moons end up visible alongside their parent at any zoom; the visual radius is decoupled from real AU but is internally consistent and zoom-stable.
+
+The parent-frame display transform also applies *Kepler in the display frame* (`n_visual = n_real × (real_ratio / visual_ratio)^1.5`) so moons orbit at speeds proportional to where they appear, not where they really are. Without this, two moons that visually look at similar distances would orbit at very different rates — eyes hate that. The simulation itself uses real Kepler; only the renderer applies the visual override.
+
+Body's frame is determined by its `parent` chain:
+
+- `parent === null` → at heliocentric origin (the star)
+- `parent` is the star → heliocentric
+- `parent` is a planet → parent-relative
+
+Why this matters for later phases: ships interacting with moons need to be rendered in the moon's parent-relative frame, otherwise the ship visually arrives next to the planet while the moon is drawn elsewhere on screen. The frame transition is the SOI handover described in §4.4.
+
 ### 4.2 Resources
 
 Each body has a finite composition across the eight resource types. Extraction rate depends on colony tech and infrastructure. Some resources are abundant on gas giant moons but expensive to lift out of the gravity well; some are common on rocky worlds but dangerous to mine.
@@ -71,6 +88,8 @@ Colonies consume resources to grow and produce goods. They can be self-sufficien
 Ships travel via Hohmann transfers by default, with higher-energy trajectories available at fuel cost. Launch windows matter. A Mars colony cannot instantly aid Ceres — it waits for alignment or pays a delta-v premium. This rhythm is the heartbeat of the game.
 
 Ship types: freight, colony ship, courier, military (later phase).
+
+**Frame transitions at SOI** (see §4.1.1). Trajectory math is heliocentric during transit. When a ship enters its destination's sphere of influence — or, for a moon target, the destination *moon's parent's* SOI — it transitions to the parent-relative frame. The same parent-frame transform that moons render through is applied to ships once they're in the planet's neighbourhood, so a ship arriving at a moon visually lands on the moon. Without this transition, ships would visually arrive at the parent's screen position while the moon is drawn elsewhere on screen. The transition itself is one block of code, triggered at the SOI boundary; the rest of every transfer is heliocentric and needs no special handling.
 
 ### 4.5 Expansion
 

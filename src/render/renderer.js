@@ -41,7 +41,7 @@ export function drawWorld(renderer, world, camera) {
     const p = positions.get(b.id);
     const compressed = compressOrbital(p);
     const s = worldToScreen(camera, canvas, compressed.x, compressed.y);
-    drawBody(ctx, b, s);
+    drawBody(ctx, b, s, camera.zoom);
   }
 }
 
@@ -72,20 +72,20 @@ function drawOrbitTrace(ctx, body, camera, canvas) {
   ctx.stroke();
 }
 
-function drawBody(ctx, body, screen) {
+function drawBody(ctx, body, screen, zoom) {
+  const r = bodyRadiusPx(body.r_km, zoom);
   if (body.kind === 'star') {
-    const r = 10;
-    const g = ctx.createRadialGradient(screen.sx, screen.sy, 0, screen.sx, screen.sy, r * 2.2);
+    const haloR = r * 2.2;
+    const g = ctx.createRadialGradient(screen.sx, screen.sy, 0, screen.sx, screen.sy, haloR);
     g.addColorStop(0, 'rgba(255, 220, 130, 0.45)');
     g.addColorStop(0.5, 'rgba(255, 200, 90, 0.08)');
     g.addColorStop(1, 'rgba(255, 200, 90, 0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(screen.sx, screen.sy, r * 2.2, 0, TWO_PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(screen.sx, screen.sy, haloR, 0, TWO_PI); ctx.fill();
     ctx.fillStyle = body.color;
     ctx.beginPath(); ctx.arc(screen.sx, screen.sy, r, 0, TWO_PI); ctx.fill();
     return;
   }
-  const r = bodyRadiusPx(body.r_km);
   ctx.fillStyle = body.color;
   ctx.beginPath(); ctx.arc(screen.sx, screen.sy, r, 0, TWO_PI); ctx.fill();
 }

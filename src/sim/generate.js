@@ -94,15 +94,34 @@ export function generateSystem(seed) {
     ellipticalIndices.add(Math.floor(rng() * planetCount));
   }
 
+  // Pre-roll eccentricities so spacing can account for them.
+  const eccs = [];
+  for (let i = 0; i < planetCount; i++) {
+    eccs.push(
+      ellipticalIndices.has(i)
+        ? rangeUniform(rng, 0.15, 0.32)
+        : Math.min(0.10, Math.abs(gaussian(rng) * 0.04))
+    );
+  }
+
+  // Margin between aphelion of inner orbit and perihelion of outer orbit.
+  // > 1 means a guaranteed visible gap; scales naturally with eccentricity.
+  const ORBIT_MARGIN = 1.35;
+
   let a = rangeUniform(rng, 0.8, 1.4);
+  let prevA = 0;
+  let prevE = 0;
 
   for (let i = 0; i < planetCount; i++) {
+    if (i > 0) {
+      const baseMult = rangeUniform(rng, 1.4, 2.1);
+      const safeMult = ((1 + prevE) / (1 - eccs[i])) * ORBIT_MARGIN;
+      a = prevA * Math.max(baseMult, safeMult);
+    }
     const t = pickWeighted(rng, PLANET_TYPES);
     const r_km = rangeUniform(rng, t.rRange[0], t.rRange[1]);
     const mass_sol = radiusToMassSolar(r_km, t.density);
-    const e = ellipticalIndices.has(i)
-      ? rangeUniform(rng, 0.15, 0.32)
-      : Math.min(0.10, Math.abs(gaussian(rng) * 0.04));
+    const e = eccs[i];
     const planetId = `${star.id}_p${i + 1}`;
     const planet = {
       id: planetId,
@@ -149,7 +168,8 @@ export function generateSystem(seed) {
       moonA *= rangeUniform(rng, 1.5, 2.4);
     }
 
-    a *= rangeUniform(rng, 1.4, 2.1);
+    prevA = a;
+    prevE = e;
   }
 
   return { bodies, seed: seedInt, starName, planetCount };

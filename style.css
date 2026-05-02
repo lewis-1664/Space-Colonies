@@ -28,13 +28,19 @@ html, body {
 
 .controls {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
   background: rgba(15, 18, 28, 0.85);
   border: 1px solid rgba(180, 200, 230, 0.15);
   border-radius: 6px;
   padding: 6px 10px;
   backdrop-filter: blur(6px);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .controls button {
@@ -63,4 +69,33 @@ html, body {
   font-variant-numeric: tabular-nums;
   font-size: 12px;
   opacity: 0.7;
+}
+
+.controls-seed label {
+  font-size: 12px;
+  opacity: 0.55;
+  margin-right: 2px;
+}
+
+.controls-seed input {
+  background: rgba(0, 0, 0, 0.35);
+  color: #cdd6f4;
+  border: 1px solid rgba(180, 200, 230, 0.18);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  min-width: 160px;
+  outline: none;
+}
+
+.controls-seed input:focus {
+  border-color: #89b4fa;
+}
+
+.system-summary {
+  margin-left: 12px;
+  font-size: 12px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
 }

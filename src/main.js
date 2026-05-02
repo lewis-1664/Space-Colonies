@@ -7,7 +7,7 @@ import { installCameraControls } from './ui/input.js';
 const canvas = document.getElementById('view');
 const sidebar = document.getElementById('sidebar');
 
-const world = createWorld({ seed: 'space-colonies' });
+let world = createWorld({ seed: 'space-colonies' });
 const renderer = createRenderer(canvas);
 const camera = createCamera({ zoom: 35 });
 
@@ -18,15 +18,28 @@ const camera = createCamera({ zoom: 35 });
 const BASE_RATE = 0.1;
 let rate = 1;
 
+function regen(seed) {
+  world = createWorld({ seed });
+  camera.zoom = 35;
+  camera.centerX = 0;
+  camera.centerY = 0;
+}
+
 const controls = createControls({
   onRateChange: r => { rate = r; },
   getRate: () => rate,
+  onRegen: regen,
 });
 sidebar.appendChild(controls.root);
 
 installCameraControls(canvas, camera);
 
-window.__sim = { world, camera, setRate: r => { rate = r; } };
+window.__sim = {
+  get world() { return world; },
+  camera,
+  setRate: r => { rate = r; },
+  regen,
+};
 
 let last = performance.now();
 function frame(now) {

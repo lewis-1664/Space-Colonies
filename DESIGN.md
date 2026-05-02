@@ -44,11 +44,13 @@ These are decided. Don't relitigate them mid-build.
 
 ### 4.1 Star System & Physics
 
-- One star at the centre. Planet count varies per seed (typically 4–12). Each planet rolls a type (rocky, ice, ice giant, gas giant, etc.), which drives its radius, density, colour palette, and likely moon count. Moons are rolled per planet within the planet's Hill sphere. Asteroid belts may slot into wide gaps between planets.
+- One star at the centre. Planet count varies per seed (4–8). Each planet rolls a type (rocky, ice, ice giant, gas giant, etc.), which drives its radius, density, colour palette, and likely moon count. The first planet sits 0.8–1.4 AU from the star (a buffer so it isn't swallowed by the star's glow at heliocentric zoom); subsequent planets follow a randomised geometric progression with spacing that respects each pair's eccentricities (no orbit crossings). Each system gets 1–2 visibly elliptical planets (e in [0.15, 0.32]); the rest are near-circular.
+- Moons are rolled per planet, with orbital distances bounded between 5 and 18 parent radii so a planet's inner and outer moons orbit at periods within ~5× of each other (visually consistent at fast time rates rather than dramatic). Inner moon at ≥ 5 R_parent keeps every moon outside the Roche limit.
+- An asteroid belt may slot into the widest qualifying gap between planets — at most one per system, ~70% of seeds get one. The belt's `a` range is bounded by `inner.aphelion × 1.10` and `outer.perihelion × 0.90`, with asteroid eccentricity capped at 0.05, so neither the belt nor any individual asteroid orbit encroaches on the bounding planet orbits.
 - Each body has: mass, semi-major axis, eccentricity, inclination (likely ignored for 2D), axial tilt, atmosphere descriptor, surface composition vector. Generation populates these from the seed; the simulation is agnostic to whether a system was hand-authored or generated.
 - Orbits computed via Kepler's equations. Fast, stable, deterministic. **Do not** use full N-body — it's a performance and gameplay trap.
 - Architecture supports a second star (binary system) — the generator simply does not produce one yet.
-- Time controls: pause, 1x, 10x, 100x, 1000x, 10000x. Smooth transitions between rates.
+- Time controls: pause, 1x, 10x, 100x, 1000x, 10000x. Rate changes are instant in Phase 1; smooth easing between rates is a polish item deferred to a later pass.
 
 #### 4.1.1 Coordinate frames (and SOI transitions)
 
@@ -122,7 +124,7 @@ A scrubbable horizontal timeline across the bottom of the screen. Major events m
 
 Each phase is a runnable, enjoyable thing on its own. **Do not skip ahead.** Each phase shakes out bugs that would compound later.
 
-### Phase 1 — The Orrery
+### Phase 1 — The Orrery (✓ complete, tagged v0.1-orrery)
 Just the star system. One star, procedurally rolled planets and moons, optional asteroid belt. Keplerian orbits, time controls (pause / 1x / 10x / 100x / 1000x / 10000x), click-to-inspect any body, seed input so the same seed always yields the same system. No colonies. Goal: something beautiful enough that you want to keep going. Lock in camera, time scrubbing, generator, and the visual feel here.
 
 ### Phase 2 — Static Colonies

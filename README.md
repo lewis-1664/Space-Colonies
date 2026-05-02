@@ -6,11 +6,11 @@ See [DESIGN.md](DESIGN.md) for the full design document.
 
 ## Status
 
-Pre-Phase 1. Repository scaffolding only.
+Phase 1 — The Orrery complete (tagged `v0.1-orrery`). Live at https://lewis-1664.github.io/Space-Colonies/.
 
 ## Build plan
 
-1. **The Orrery** — procedural star system (one star, rolled planets and moons), Keplerian orbits, time controls
+1. ✓ **The Orrery** — procedural star system (one star, rolled planets, moons, optional asteroid belt), Keplerian orbits, time controls, click-to-inspect, seed input, pan/zoom camera
 2. **Static Colonies** — population, resources, infrastructure
 3. **Ships and Transfers** — Hohmann freight
 4. **Autonomous Expansion** — colony ships, founding

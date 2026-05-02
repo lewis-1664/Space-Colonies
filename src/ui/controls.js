@@ -51,6 +51,8 @@ export function createControls({ onRateChange, getRate, onRegen }) {
     if (document.activeElement !== seedInput) seedInput.value = String(world.seed);
     const parts = [world.starName, `${world.planetCount} planet${world.planetCount === 1 ? '' : 's'}`];
     if (world.beltCount > 0) parts.push(`${world.beltCount} belt${world.beltCount === 1 ? '' : 's'}`);
+    const colCount = world.colonies.length;
+    if (colCount > 0) parts.push(`${colCount} colon${colCount === 1 ? 'y' : 'ies'}`);
     summary.textContent = parts.join(' · ');
   }
 

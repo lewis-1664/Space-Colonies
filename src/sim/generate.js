@@ -87,14 +87,22 @@ export function generateSystem(seed) {
   };
   const bodies = [star];
 
-  const planetCount = 4 + Math.floor(rng() * 9);
-  let a = rangeUniform(rng, 0.25, 0.55);
+  const planetCount = 4 + Math.floor(rng() * 5);
+  const ellipticalCount = Math.min(planetCount, 1 + Math.floor(rng() * 2));
+  const ellipticalIndices = new Set();
+  while (ellipticalIndices.size < ellipticalCount) {
+    ellipticalIndices.add(Math.floor(rng() * planetCount));
+  }
+
+  let a = rangeUniform(rng, 0.8, 1.4);
 
   for (let i = 0; i < planetCount; i++) {
     const t = pickWeighted(rng, PLANET_TYPES);
     const r_km = rangeUniform(rng, t.rRange[0], t.rRange[1]);
     const mass_sol = radiusToMassSolar(r_km, t.density);
-    const e = Math.min(0.35, Math.abs(gaussian(rng) * 0.05));
+    const e = ellipticalIndices.has(i)
+      ? rangeUniform(rng, 0.15, 0.32)
+      : Math.min(0.10, Math.abs(gaussian(rng) * 0.04));
     const planetId = `${star.id}_p${i + 1}`;
     const planet = {
       id: planetId,

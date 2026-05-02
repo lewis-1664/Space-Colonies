@@ -2,6 +2,7 @@ import { createWorld, advanceWorld } from './sim/world.js';
 import { createRenderer, resizeRenderer, drawWorld } from './render/renderer.js';
 import { createCamera } from './render/camera.js';
 import { createControls } from './ui/controls.js';
+import { installCameraControls } from './ui/input.js';
 
 const canvas = document.getElementById('view');
 const sidebar = document.getElementById('sidebar');
@@ -17,6 +18,10 @@ const controls = createControls({
   getRate: () => rate,
 });
 sidebar.appendChild(controls.root);
+
+installCameraControls(canvas, camera);
+
+window.__sim = { world, camera, setRate: r => { rate = r; } };
 
 let last = performance.now();
 function frame(now) {

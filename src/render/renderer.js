@@ -33,7 +33,7 @@ export function drawWorld(renderer, world, camera) {
   ctx.strokeStyle = 'rgba(180, 200, 230, 0.18)';
   ctx.lineWidth = 1;
   for (const b of world.bodies) {
-    if (b.parent === 'sun') drawOrbitTrace(ctx, b, camera, canvas);
+    if (b.kind === 'planet') drawOrbitTrace(ctx, b, camera, canvas);
   }
 
   const positions = bodyPositions(world);
@@ -74,13 +74,13 @@ function drawOrbitTrace(ctx, body, camera, canvas) {
 
 function drawBody(ctx, body, screen) {
   if (body.kind === 'star') {
-    const r = 14;
-    const g = ctx.createRadialGradient(screen.sx, screen.sy, 0, screen.sx, screen.sy, r * 5);
-    g.addColorStop(0, 'rgba(255, 220, 130, 0.55)');
-    g.addColorStop(0.25, 'rgba(255, 200, 90, 0.18)');
+    const r = 10;
+    const g = ctx.createRadialGradient(screen.sx, screen.sy, 0, screen.sx, screen.sy, r * 2.2);
+    g.addColorStop(0, 'rgba(255, 220, 130, 0.45)');
+    g.addColorStop(0.5, 'rgba(255, 200, 90, 0.08)');
     g.addColorStop(1, 'rgba(255, 200, 90, 0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(screen.sx, screen.sy, r * 5, 0, TWO_PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(screen.sx, screen.sy, r * 2.2, 0, TWO_PI); ctx.fill();
     ctx.fillStyle = body.color;
     ctx.beginPath(); ctx.arc(screen.sx, screen.sy, r, 0, TWO_PI); ctx.fill();
     return;

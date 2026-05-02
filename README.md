@@ -1,6 +1,6 @@
 # Space Colonies
 
-A 2D orbital colony simulation in the browser. Watch civilizations rise across a star system, or take command of one and steer it through centuries of expansion, scarcity, and schism.
+A 2D orbital colony simulation in the browser. Watch civilizations rise across a randomly-generated star system, or take command of one and steer it through centuries of expansion, scarcity, and schism. Each seed produces a unique system; same seed always gives the same one.
 
 See [DESIGN.md](DESIGN.md) for the full design document.
 
@@ -10,7 +10,7 @@ Pre-Phase 1. Repository scaffolding only.
 
 ## Build plan
 
-1. **The Orrery** — solar system, Keplerian orbits, time controls
+1. **The Orrery** — procedural star system (one star, rolled planets and moons), Keplerian orbits, time controls
 2. **Static Colonies** — population, resources, infrastructure
 3. **Ships and Transfers** — Hohmann freight
 4. **Autonomous Expansion** — colony ships, founding

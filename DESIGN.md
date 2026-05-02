@@ -8,7 +8,7 @@ A 2D orbital colony simulation in the browser. Watch civilizations rise across a
 
 ## 1. Vision
 
-A single-page HTML/JS application where the player observes (or governs) the spread of human civilization across a fixed solar system. Colonies harvest planets and moons for resources, build ships, found new colonies, trade, fracture, collapse, and rebuild. Real Keplerian physics governs movement. Travel takes time. Communication is bound by the speed of light. Every run is a story the simulation tells.
+A single-page HTML/JS application where the player observes (or governs) the spread of human civilization across a randomly-generated star system. Colonies harvest planets and moons for resources, build ships, found new colonies, trade, fracture, collapse, and rebuild. Real Keplerian physics governs movement. Travel takes time. Communication is bound by the speed of light. Every run is a story the simulation tells, in a star system the simulation generated.
 
 The project supports two modes that share the same underlying simulation:
 
@@ -23,15 +23,16 @@ The two modes share roughly 95% of the codebase. Governor mode is Sandbox mode w
 - **Mood:** Hopeful but precarious. Closer to *Foundation* than *Dwarf Fortress*; not utopian, not grimdark.
 - **Failure is real.** Colonies can go extinct. Total human collapse back to one world is possible, and that possibility is what makes survival mean something.
 - **Legibility:** The player sees what an observer would reasonably see. Numbers exist but are surfaced through interaction, not dumped on screen.
-- **View:** Top-down ecliptic, 2D. Distances log-scaled or otherwise compressed — true-to-scale solar systems are unreadable. Pretty-not-accurate is the correct trade-off.
+- **View:** Top-down ecliptic, 2D. Distances log-scaled or otherwise compressed — true-to-scale star systems are unreadable. Pretty-not-accurate is the correct trade-off.
 
 ## 3. Locked-In Choices
 
 These are decided. Don't relitigate them mid-build.
 
 - **2D only.** No 3D, ever.
-- **Fixed star system.** Same Sun, same 8 planets every run. Procedural generation may come later but is out of scope for now. Players develop attachment to *Mars*, not to *Planet 4-Beta*.
-- **Determinism with seeds.** Every simulation has a seed. Same seed + same setup = same outcome. Critical for debugging, sharing scenarios, and player retries.
+- **Procedurally generated star system.** Each seed produces a unique system — star, planets, moons. Planet count varies per seed. Anything goes for layout: rocky inside, gas outside, mixed, weird — the generator is not constrained to imitate our solar system. Player attachment is per-run, anchored to in-system names rather than to *Mars*.
+- **One star for now, designed for two later.** The generator emits a single star at the barycentre. The body model and renderer treat "the central thing" as generic so a binary system can be slotted in without restructuring.
+- **Determinism with seeds.** Every simulation has a seed. Same seed = same generated system + same outcome. Critical for debugging, sharing scenarios, and player retries.
 - **Fixed-timestep simulation, decoupled from rendering.** All randomness draws from the seeded RNG.
 - **Time scale:** Base rate 1x = 1 in-game day per real second. Multipliers up to ~10000x (about 30 in-game years per real second).
 - **Population is abstract.** Tracked as a number plus derived stats (growth rate, education, morale). Named figures are narrative overlays, not simulated agents.
@@ -41,11 +42,12 @@ These are decided. Don't relitigate them mid-build.
 
 ## 4. Core Systems
 
-### 4.1 Solar System & Physics
+### 4.1 Star System & Physics
 
-- Sun at center, 8 planets, selected moons, an asteroid belt.
-- Each body has: mass, semi-major axis, eccentricity, inclination (likely ignored for 2D), axial tilt, atmosphere descriptor, surface composition vector.
+- One star at the centre. Planet count varies per seed (typically 4–12). Each planet rolls a type (rocky, ice, ice giant, gas giant, etc.), which drives its radius, density, colour palette, and likely moon count. Moons are rolled per planet within the planet's Hill sphere. Asteroid belts may slot into wide gaps between planets.
+- Each body has: mass, semi-major axis, eccentricity, inclination (likely ignored for 2D), axial tilt, atmosphere descriptor, surface composition vector. Generation populates these from the seed; the simulation is agnostic to whether a system was hand-authored or generated.
 - Orbits computed via Kepler's equations. Fast, stable, deterministic. **Do not** use full N-body — it's a performance and gameplay trap.
+- Architecture supports a second star (binary system) — the generator simply does not produce one yet.
 - Time controls: pause, 1x, 10x, 100x, 1000x, 10000x. Smooth transitions between rates.
 
 ### 4.2 Resources
@@ -102,7 +104,7 @@ A scrubbable horizontal timeline across the bottom of the screen. Major events m
 Each phase is a runnable, enjoyable thing on its own. **Do not skip ahead.** Each phase shakes out bugs that would compound later.
 
 ### Phase 1 — The Orrery
-Just the solar system. Sun, planets, moons, asteroid belt. Keplerian orbits, time controls (pause / 1x / 10x / 100x / 1000x / 10000x), click-to-inspect any body. No colonies. Goal: something beautiful enough that you want to keep going. Lock in camera, time scrubbing, and the visual feel here.
+Just the star system. One star, procedurally rolled planets and moons, optional asteroid belt. Keplerian orbits, time controls (pause / 1x / 10x / 100x / 1000x / 10000x), click-to-inspect any body, seed input so the same seed always yields the same system. No colonies. Goal: something beautiful enough that you want to keep going. Lock in camera, time scrubbing, generator, and the visual feel here.
 
 ### Phase 2 — Static Colonies
 Place colonies on bodies. Population, resources, infrastructure exist and evolve over time, but colonies do not yet act — no ships, no expansion. Click a colony to see its state. Tune the economic core here.
@@ -132,7 +134,7 @@ Wrap a UI around "be one specific colony." Add directives, a HUD, decision point
 
 These are interesting but should not be answered now. Build the core first.
 
-- Procedural star systems
+- Multiple stars (binary, ternary) — architecture supports it; generator does not yet emit them
 - Multiplayer or shared scenarios
 - Modding / scripting layer
 - Mobile/touch UI

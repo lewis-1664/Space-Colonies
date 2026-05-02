@@ -10,12 +10,11 @@ export function compressAU(r_au) {
 // Visual radius in pixels. At ZOOM_REF (default zoom): Sun ~14 px,
 // Jupiter ~7 px, Earth ~3 px, Mercury ~2 px. True scale is unreadable
 // (the Sun is ~290× Mercury by radius), so the cube-root compression
-// stays. Above ZOOM_REF, body sizes grow as sqrt(zoom / ZOOM_REF) so
-// small planets become inspectable when you zoom in. Capped so the
-// star can't swallow the screen at extreme zoom.
+// stays. Sizes scale 1:1 with zoom — zoom in 2×, bodies double; zoom
+// out, they shrink with the orbits, so the sun's glow can't swallow
+// the inner planets at low zoom. Min clamp keeps any body visible.
 const ZOOM_REF = 35;
 export function bodyRadiusPx(r_km, zoom = ZOOM_REF) {
   const base = 0.16 * Math.cbrt(r_km);
-  const scale = Math.sqrt(Math.max(zoom, ZOOM_REF) / ZOOM_REF);
-  return Math.max(2, Math.min(140, base * scale));
+  return Math.max(2, Math.min(500, base * zoom / ZOOM_REF));
 }

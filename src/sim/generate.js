@@ -182,42 +182,45 @@ export function generateSystem(seed) {
     prevE = e;
   }
 
-  // Asteroid belts. The belt must occupy a band that no planet's orbit
-  // reaches — past the inner planet's aphelion, before the outer
-  // planet's perihelion. Asteroid eccentricity is also bounded so each
-  // asteroid's own orbit stays inside the band; otherwise visually you
-  // see planet orbit rings cutting through the belt.
+  // Asteroid belt. At most one per system — placed in the widest
+  // eligible gap. The belt must occupy a band that no planet's orbit
+  // reaches: past the inner planet's aphelion plus 10% padding,
+  // before the outer planet's perihelion minus 10% padding. Asteroid
+  // eccentricity is also bounded so each asteroid's own orbit stays
+  // inside that band.
   const ASTEROID_E_MAX = 0.05;
+  const ORBIT_PADDING = 0.10;
   const planets = bodies.filter(b => b.kind === 'planet');
-  let beltCount = 0;
+  let bestGap = null;
+  let bestRatio = 0;
   for (let i = 1; i < planets.length; i++) {
     const inner = planets[i - 1];
     const outer = planets[i];
-    // Require a genuinely wide gap; most spacing-rule-satisfying gaps
-    // qualify under just the orbit-clearance check, which would let
-    // every system host belts in every gap. Real systems are sparser.
-    if (outer.a / inner.a < 1.7) continue;
+    const ratio = outer.a / inner.a;
+    if (ratio < 1.7) continue;
     const innerAphelion = inner.a * (1 + inner.e);
     const outerPerihelion = outer.a * (1 - outer.e);
-    // Allowed range of asteroid semi-major axes such that asteroid
-    // perihelion > innerAphelion and asteroid aphelion < outerPerihelion
-    // for any e ≤ ASTEROID_E_MAX.
-    const aRangeMin = innerAphelion / (1 - ASTEROID_E_MAX);
-    const aRangeMax = outerPerihelion / (1 + ASTEROID_E_MAX);
-    if (aRangeMax / aRangeMin < 1.15) continue; // not enough clearance
-    if (rng() > 0.5) continue;
-    beltCount++;
-    // Use the central 80% of the allowed range so the belt sits cleanly
-    // away from both bounding planet orbits.
-    const center = Math.sqrt(aRangeMin * aRangeMax);
-    const halfWidth = (aRangeMax - aRangeMin) * 0.4;
+    const aRangeMin = innerAphelion * (1 + ORBIT_PADDING) / (1 - ASTEROID_E_MAX);
+    const aRangeMax = outerPerihelion * (1 - ORBIT_PADDING) / (1 + ASTEROID_E_MAX);
+    if (aRangeMax / aRangeMin < 1.05) continue;
+    if (ratio > bestRatio) {
+      bestRatio = ratio;
+      bestGap = { aRangeMin, aRangeMax };
+    }
+  }
+
+  let beltCount = 0;
+  if (bestGap && rng() < 0.7) {
+    beltCount = 1;
+    const center = Math.sqrt(bestGap.aRangeMin * bestGap.aRangeMax);
+    const halfWidth = (bestGap.aRangeMax - bestGap.aRangeMin) * 0.4;
     const aMin = center - halfWidth;
     const aMax = center + halfWidth;
-    const count = 120 + Math.floor(rng() * 180);
+    const count = 150 + Math.floor(rng() * 200);
     for (let j = 0; j < count; j++) {
       const aAst = rangeUniform(rng, aMin, aMax);
       bodies.push({
-        id: `${star.id}_b${beltCount}_${j}`,
+        id: `${star.id}_b1_${j}`,
         name: null,
         kind: 'asteroid',
         parent: star.id,

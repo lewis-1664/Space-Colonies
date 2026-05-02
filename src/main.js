@@ -1,7 +1,8 @@
 import { createWorld, advanceWorld } from './sim/world.js';
-import { createRenderer, resizeRenderer, drawWorld } from './render/renderer.js';
+import { createRenderer, resizeRenderer, drawWorld, hitTest } from './render/renderer.js';
 import { createCamera } from './render/camera.js';
 import { createControls } from './ui/controls.js';
+import { createInspector } from './ui/inspector.js';
 import { installCameraControls } from './ui/input.js';
 
 const canvas = document.getElementById('view');
@@ -18,11 +19,14 @@ const camera = createCamera({ zoom: 35 });
 const BASE_RATE = 0.1;
 let rate = 1;
 
+let selectedBodyId = null;
+
 function regen(seed) {
   world = createWorld({ seed });
   camera.zoom = 35;
   camera.centerX = 0;
   camera.centerY = 0;
+  selectedBodyId = null;
 }
 
 const controls = createControls({
@@ -32,7 +36,12 @@ const controls = createControls({
 });
 sidebar.appendChild(controls.root);
 
-installCameraControls(canvas, camera);
+const inspector = createInspector({ onClose: () => { selectedBodyId = null; } });
+document.body.appendChild(inspector.root);
+
+installCameraControls(canvas, camera, {
+  onClick: (x, y) => { selectedBodyId = hitTest(x, y, renderer.hits); },
+});
 
 window.__sim = {
   get world() { return world; },
@@ -49,6 +58,7 @@ function frame(now) {
   resizeRenderer(renderer);
   drawWorld(renderer, world, camera);
   controls.refresh(world);
+  inspector.refresh(world, selectedBodyId);
   requestAnimationFrame(frame);
 }
 

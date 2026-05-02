@@ -7,7 +7,7 @@ const TWO_PI = Math.PI * 2;
 const AU_KM = 149597870.7;
 
 export function createRenderer(canvas) {
-  return { canvas, ctx: canvas.getContext('2d') };
+  return { canvas, ctx: canvas.getContext('2d'), hits: new Map() };
 }
 
 export function resizeRenderer(renderer) {
@@ -41,6 +41,7 @@ export function drawWorld(renderer, world, camera) {
   const positions = bodyPositions(world);
   const screenById = new Map();
   const bodyById = new Map(world.bodies.map(x => [x.id, x]));
+  renderer.hits.clear();
   for (const b of world.bodies) {
     let s;
     let displayR;
@@ -86,7 +87,23 @@ export function drawWorld(renderer, world, camera) {
     }
     screenById.set(b.id, s);
     drawBody(ctx, b, s, camera.zoom, displayR);
+    if (b.kind !== 'asteroid') {
+      const r = displayR ?? bodyRadiusPx(b.r_km, camera.zoom);
+      renderer.hits.set(b.id, { sx: s.sx, sy: s.sy, r });
+    }
   }
+}
+
+export function hitTest(x, y, hits) {
+  let best = null;
+  for (const [id, h] of hits) {
+    const dist = Math.hypot(x - h.sx, y - h.sy);
+    const tol = Math.max(8, h.r + 4);
+    if (dist < tol && (best === null || dist < best.dist)) {
+      best = { id, dist };
+    }
+  }
+  return best ? best.id : null;
 }
 
 function compressOrbital(p) {

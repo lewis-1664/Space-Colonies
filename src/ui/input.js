@@ -4,23 +4,32 @@
 const ZOOM_MIN = 2;
 const ZOOM_MAX = 20000;
 
-export function installCameraControls(canvas, camera) {
+export function installCameraControls(canvas, camera, { onClick } = {}) {
   let dragging = false;
   let lastX = 0;
   let lastY = 0;
+  let downX = 0;
+  let downY = 0;
 
   canvas.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     dragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
+    downX = e.clientX;
+    downY = e.clientY;
     canvas.style.cursor = 'grabbing';
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', e => {
     if (!dragging) return;
     dragging = false;
     canvas.style.cursor = '';
+    const drift = Math.hypot(e.clientX - downX, e.clientY - downY);
+    if (drift < 4 && onClick) {
+      const rect = canvas.getBoundingClientRect();
+      onClick(e.clientX - rect.left, e.clientY - rect.top);
+    }
   });
 
   window.addEventListener('mousemove', e => {

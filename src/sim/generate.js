@@ -2,6 +2,7 @@ import { hashSeed, makeRng } from './rng.js';
 
 const TWO_PI = Math.PI * 2;
 const SOLAR_MASS_KG = 1.989e30;
+const AU_KM = 149597870.7;
 
 const STAR_NAMES = [
   'Helios', 'Selene', 'Eos', 'Aurora', 'Boreas', 'Iris', 'Hesper',
@@ -143,9 +144,14 @@ export function generateSystem(seed) {
 
     const hill_au = a * Math.cbrt(mass_sol / (3 * starMass));
     const moonCount = moonRollCount(rng, t.type);
-    let moonA = rangeUniform(rng, 0.0006, 0.002);
+    // Innermost moon at 6-12 parent radii — outside the Roche limit
+    // for either icy or rocky bodies. Earth's Moon sits at 60 R_E, so
+    // this is the inner edge of plausible moon territory.
+    const planetR_au = r_km / AU_KM;
+    let moonA = planetR_au * rangeUniform(rng, 6, 12);
+    const moonCap = Math.min(0.05, hill_au * 0.4);
     for (let m = 0; m < moonCount; m++) {
-      if (moonA > Math.min(0.05, hill_au * 0.4)) break;
+      if (moonA > moonCap) break;
       const moonR = rangeUniform(rng, 200, 2500);
       const moonDensity = 2 + rng() * 2;
       const moonMass = radiusToMassSolar(moonR, moonDensity);

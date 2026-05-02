@@ -1,4 +1,6 @@
 import { hashSeed, makeRng } from './rng.js';
+import { rollComposition } from './composition.js';
+import { createColony, initialReserves } from './colony.js';
 
 const TWO_PI = Math.PI * 2;
 const SOLAR_MASS_KG = 1.989e30;
@@ -140,6 +142,8 @@ export function generateSystem(seed) {
       color: pickFrom(rng, t.colors),
     };
     planet.T_days = TWO_PI / planet.n;
+    planet.composition = rollComposition(rng, planet, star);
+    planet.reserves = initialReserves(planet);
     bodies.push(planet);
 
     const hill_au = a * Math.cbrt(mass_sol / (3 * starMass));
@@ -174,6 +178,8 @@ export function generateSystem(seed) {
         color: pickFrom(rng, ['#cdd6f4','#a8b4c8','#888892','#b8a890','#9c9a8a','#d8d0c0']),
       };
       moon.T_days = TWO_PI / moon.n;
+      moon.composition = rollComposition(rng, moon, planet);
+      moon.reserves = initialReserves(moon);
       bodies.push(moon);
       moonA *= rangeUniform(rng, 1.5, 2.4);
     }
@@ -219,7 +225,7 @@ export function generateSystem(seed) {
     const count = 150 + Math.floor(rng() * 200);
     for (let j = 0; j < count; j++) {
       const aAst = rangeUniform(rng, aMin, aMax);
-      bodies.push({
+      const asteroid = {
         id: `${star.id}_b1_${j}`,
         name: null,
         kind: 'asteroid',
@@ -232,9 +238,59 @@ export function generateSystem(seed) {
         r_km: 5 + rng() * 80,
         mass_sol: 0,
         color: pickFrom(rng, ['#7a6f60', '#8b7d6b', '#69584a', '#7a6451', '#6d5a4d']),
-      });
+      };
+      asteroid.composition = rollComposition(rng, asteroid, star);
+      asteroid.reserves = initialReserves(asteroid);
+      bodies.push(asteroid);
     }
   }
 
-  return { bodies, seed: seedInt, starName, planetCount, beltCount };
+  const colonies = seedStarterColonies(rng, bodies);
+
+  return { bodies, colonies, seed: seedInt, starName, planetCount, beltCount };
+}
+
+// Phase 2: 2 starter colonies per system, deterministic from seed. Planets only;
+// moons are not eligible for starter colonies (Phase 4 expansion may revisit).
+function habitabilityScore(body) {
+  if (body.kind !== 'planet') return 0;
+  switch (body.type) {
+    case 'rocky_large': return 5;
+    case 'rocky':       return 5;
+    case 'rocky_small': return 3;
+    case 'ice':         return 2;
+    default:            return 0;
+  }
+}
+
+function seedStarterColonies(rng, bodies) {
+  const candidates = [];
+  for (const b of bodies) {
+    const score = habitabilityScore(b);
+    if (score > 0) candidates.push({ body: b, score });
+  }
+  if (candidates.length === 0) return [];
+  candidates.sort((a, b) => b.score - a.score || a.body.id.localeCompare(b.body.id));
+
+  // Pick 2 colonies (or 1 if only one candidate). Walk score tiers from
+  // highest down, picking a random body within the current tier each step.
+  // Same seed → same layout; ties broken via the seeded rng.
+  const target = Math.min(2, candidates.length);
+  const remaining = candidates.slice();
+  const chosen = [];
+  while (chosen.length < target && remaining.length > 0) {
+    const topScore = remaining[0].score;
+    const tierEnd = remaining.findIndex(c => c.score !== topScore);
+    const tierLen = tierEnd === -1 ? remaining.length : tierEnd;
+    const idx = Math.floor(rng() * tierLen);
+    chosen.push(remaining.splice(idx, 1)[0]);
+  }
+
+  return chosen.map((c, i) => createColony({
+    id: `col_${i + 1}`,
+    name: `${c.body.name} Colony`,
+    bodyId: c.body.id,
+    foundedAt: 0,
+    rng,
+  }));
 }

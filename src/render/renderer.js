@@ -3,6 +3,7 @@ import { compressAU, bodyRadiusPx } from './scale.js';
 import { worldToScreen } from './camera.js';
 
 const TWO_PI = Math.PI * 2;
+const AU_KM = 149597870.7;
 
 export function createRenderer(canvas) {
   return { canvas, ctx: canvas.getContext('2d') };
@@ -37,10 +38,35 @@ export function drawWorld(renderer, world, camera) {
   }
 
   const positions = bodyPositions(world);
+  const screenById = new Map();
+  const bodyById = new Map(world.bodies.map(x => [x.id, x]));
   for (const b of world.bodies) {
-    const p = positions.get(b.id);
-    const compressed = compressOrbital(p);
-    const s = worldToScreen(camera, canvas, compressed.x, compressed.y);
+    let s;
+    if (b.kind === 'moon' && screenById.has(b.parent)) {
+      // Bodies are rendered massively exaggerated relative to true scale
+      // (a gas giant is ~400× its real radius on screen). True-scale moon
+      // offsets would always render inside their parent's disc. Lift the
+      // moon's local offset into the parent's display frame: at scale K =
+      // parent_display_radius / parent_real_radius, a moon at 6 R_parent
+      // in real space appears at 6 R_disp on screen at every zoom.
+      const parent = bodyById.get(b.parent);
+      const parentScreen = screenById.get(b.parent);
+      const parentPos = positions.get(b.parent);
+      const moonPos = positions.get(b.id);
+      const localX = moonPos.x - parentPos.x;
+      const localY = moonPos.y - parentPos.y;
+      const realParentR_au = parent.r_km / AU_KM;
+      const dispParentR_px = bodyRadiusPx(parent.r_km, camera.zoom);
+      const k = dispParentR_px / (realParentR_au * camera.zoom);
+      s = {
+        sx: parentScreen.sx + localX * camera.zoom * k,
+        sy: parentScreen.sy + localY * camera.zoom * k,
+      };
+    } else {
+      const compressed = compressOrbital(positions.get(b.id));
+      s = worldToScreen(camera, canvas, compressed.x, compressed.y);
+    }
+    screenById.set(b.id, s);
     drawBody(ctx, b, s, camera.zoom);
   }
 }

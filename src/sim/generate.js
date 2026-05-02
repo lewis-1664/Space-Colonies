@@ -144,12 +144,16 @@ export function generateSystem(seed) {
 
     const hill_au = a * Math.cbrt(mass_sol / (3 * starMass));
     const moonCount = moonRollCount(rng, t.type);
-    // Innermost moon at 6-12 parent radii — outside the Roche limit
-    // for either icy or rocky bodies. Earth's Moon sits at 60 R_E, so
-    // this is the inner edge of plausible moon territory.
+    // Innermost moon at 5-8 parent radii — outside the Roche limit.
+    // Outer cap at 18 R_parent keeps the period ratio (Kepler T ∝ a^1.5)
+    // bounded to ~5× across all moons of a planet, so inner and outer
+    // moons don't orbit at wildly different speeds in playback. Real
+    // moon systems span much wider (Earth's Moon at 60 R_E), but the
+    // visual feel of a moon system at fast time rates demands a tighter
+    // physical range.
     const planetR_au = r_km / AU_KM;
-    let moonA = planetR_au * rangeUniform(rng, 6, 12);
-    const moonCap = Math.min(0.05, hill_au * 0.4);
+    let moonA = planetR_au * rangeUniform(rng, 5, 8);
+    const moonCap = Math.min(0.05, hill_au * 0.4, planetR_au * 18);
     for (let m = 0; m < moonCount; m++) {
       if (moonA > moonCap) break;
       const moonR = rangeUniform(rng, 200, 2500);

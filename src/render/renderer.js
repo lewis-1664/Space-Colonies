@@ -42,6 +42,7 @@ export function drawWorld(renderer, world, camera) {
   const bodyById = new Map(world.bodies.map(x => [x.id, x]));
   for (const b of world.bodies) {
     let s;
+    let displayR;
     if (b.kind === 'moon' && screenById.has(b.parent)) {
       // Bodies are rendered massively exaggerated (a gas giant is ~400×
       // its real radius on screen). Rendering moons at true scale puts
@@ -49,7 +50,10 @@ export function drawWorld(renderer, world, camera) {
       // display-frame scale flings them off the screen. Compromise:
       // place the moon at f(r_real / r_planet) × parent_display_radius,
       // with a cube-root compression so moons cluster visibly just
-      // outside the parent regardless of their real distance.
+      // outside the parent regardless of their real distance. The
+      // moon's display *size* is also scaled relative to its parent —
+      // sqrt of the real size ratio — so a moon doesn't appear as 30%
+      // of its parent's diameter when its real size is 3%.
       const parent = bodyById.get(b.parent);
       const parentScreen = screenById.get(b.parent);
       const parentPos = positions.get(b.parent);
@@ -57,11 +61,11 @@ export function drawWorld(renderer, world, camera) {
       const localX = moonPos.x - parentPos.x;
       const localY = moonPos.y - parentPos.y;
       const r_real_au = Math.hypot(localX, localY);
+      const dispParentR_px = bodyRadiusPx(parent.r_km, camera.zoom);
       if (r_real_au === 0) {
         s = parentScreen;
       } else {
         const realParentR_au = parent.r_km / AU_KM;
-        const dispParentR_px = bodyRadiusPx(parent.r_km, camera.zoom);
         const ratio = r_real_au / realParentR_au;
         const compressed = 1.5 + 0.5 * Math.cbrt(ratio);
         const offset = compressed * dispParentR_px;
@@ -70,12 +74,13 @@ export function drawWorld(renderer, world, camera) {
           sy: parentScreen.sy + (localY / r_real_au) * offset,
         };
       }
+      displayR = Math.max(2, dispParentR_px * Math.sqrt(b.r_km / parent.r_km));
     } else {
       const compressed = compressOrbital(positions.get(b.id));
       s = worldToScreen(camera, canvas, compressed.x, compressed.y);
     }
     screenById.set(b.id, s);
-    drawBody(ctx, b, s, camera.zoom);
+    drawBody(ctx, b, s, camera.zoom, displayR);
   }
 }
 
@@ -106,8 +111,8 @@ function drawOrbitTrace(ctx, body, camera, canvas) {
   ctx.stroke();
 }
 
-function drawBody(ctx, body, screen, zoom) {
-  const r = bodyRadiusPx(body.r_km, zoom);
+function drawBody(ctx, body, screen, zoom, overrideR) {
+  const r = overrideR ?? bodyRadiusPx(body.r_km, zoom);
   if (body.kind === 'star') {
     const haloR = r * 2.2;
     const g = ctx.createRadialGradient(screen.sx, screen.sy, 0, screen.sx, screen.sy, haloR);

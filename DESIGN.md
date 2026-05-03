@@ -133,6 +133,17 @@ Place colonies on bodies. Population, resources, infrastructure exist and evolve
 ### Phase 3 — Ships and Transfers
 Hohmann transfers between bodies. Initially freight only: surplus colony sends to deficit colony. Watching ships trace transfer ellipses across the system is the moment the project starts to feel alive.
 
+**Phase 3 starting points** — proposals only, not locked in. Discuss with the user and update DESIGN.md as each is decided.
+
+1. *Spaceport tier-up trigger.* Phase 2 left `spaceportTier` static at 0; the rendering is wired (satellite swarm) but no upgrade path exists. Lean: gate on hab ≥ 3 and industry ≥ 2, geometric cost (`5^N` base goods + metals + fissile). Spaceport tier = fleet-size cap, so each tier-up implicitly buys ships. Alt: industry ≥ 2 only, no hab gate.
+2. *Surplus / deficit signal.* The economy already exposes per-resource flow and stockpile per colony, plus body reserve % per resource — Phase 3 just needs a threshold. Lean: surplus = stockpile ≥ 180 days of demand AND positive net flow; deficit = stockpile ≤ 30 days OR body reserve ≤ 10%. Drives per-colony trade decisions, no central matchmaker needed.
+3. *Ship lifecycle.* Lean: persistent fleet. Each ship is an entity in `world.ships` with a state machine (idle / loading / transit / unloading / returning). Spaceport tier-ups buy new ships into the fleet rather than each delivery spawning one. Alt: per-trip spawn (simpler, less narrative).
+4. *Trade authority.* Lean: each colony with a free ship + surplus picks a deficit destination by score (need × proximity, with delta-v cost penalising the wrong launch window). Fully decentralised. The autonomous-AI work in §1 is the same colony picking its own routes.
+5. *Visual.* Lean: tiny chevron / arrowhead (2–3 px) walking along a pre-computed Hohmann ellipse drawn faintly during transit. Cargo type encoded by tint. Inspector on a ship shows source / destination / cargo / ETA / fuel. Fits the existing day-night-shading + city-cluster aesthetic — small, deterministic, glanceable.
+6. *Frame transitions.* Already locked in by §4.1.1 — heliocentric during transit, switch to the destination's parent-relative frame at the SOI boundary. Implement as one transition block at the boundary; the rest of every transfer needs no special handling. Same parent-frame transform that moons render through is reused for the ship once it's in the planet's neighbourhood.
+
+Performance target (DESIGN.md §6) and the determinism test (`tests/determinism.test.js`) both apply — neither should regress as Phase 3 lands.
+
 ### Phase 4 — Autonomous Expansion
 Colonies decide to send colony ships. New colonies are founded. The map changes over time. This is when it becomes a sim.
 
